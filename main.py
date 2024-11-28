@@ -13,6 +13,7 @@ class Game:
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("RPG TurnBased Game")
         
+        # Inicializar componentes
         self.menu = Menu(self.screen)
         self.engine = None
         self.ui = None
@@ -20,13 +21,15 @@ class Game:
         self.clock = pygame.time.Clock()
         self.game_state = 'menu'  # Estados: 'menu', 'game'
 
-    def init_game(self):
-        self.engine = GameEngine()
+    def init_game(self, selected_allies, selected_enemies):
+        """Inicializa el juego con los equipos seleccionados"""
+        self.engine = GameEngine(selected_allies, selected_enemies)
         self.ui = GameUI()
         self.engine.posicionar_personajes()
         self.audio.play_bgm('battle')
 
     def handle_game_events(self, event):
+        """Maneja los eventos durante el juego"""
         if event.type == pygame.USEREVENT:
             if hasattr(event, 'user_type'):
                 if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
@@ -42,6 +45,7 @@ class Game:
                         
                         elif event.ui_element == self.ui.defender_boton:
                             self.engine.manejar_accion('defender', personaje_activo)
+                            self.audio.play_sound('defend')
                         
                         elif event.ui_element == self.ui.curar_boton:
                             objetivos_posibles = self.engine.get_aliados_posibles()
@@ -50,7 +54,7 @@ class Game:
                                 self.engine.manejar_accion('curar', personaje_activo, objetivo)
                                 self.audio.play_sound('heal')
 
-        if event.type == pygame.KEYDOWN:
+        elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self.game_state = 'menu'
                 self.audio.play_bgm('menu')
@@ -78,8 +82,9 @@ class Game:
                     # Verificar si debemos cambiar al estado de juego
                     if self.menu.state == 'game':
                         self.game_state = 'game'
-                        if not self.engine:
-                            self.init_game()
+                        allies, enemies = self.menu.get_selected_teams()
+                        if allies and enemies:
+                            self.init_game(allies, enemies)
                 else:
                     self.handle_game_events(event)
                     if self.ui:
@@ -109,6 +114,8 @@ class Game:
             
             pygame.display.flip()
 
+        # Limpiar recursos al salir
+        self.audio.stop_bgm()
         pygame.quit()
 
 if __name__ == "__main__":

@@ -2,13 +2,14 @@ import pygame
 import pygame_gui
 from config import *
 from audio_manager import AudioManager
+from character_select import CharacterSelect
 
 class Menu:
     def __init__(self, screen):
         self.screen = screen
         self.manager = pygame_gui.UIManager((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.audio = AudioManager()
-        self.state = 'main'  # Estados: 'main', 'config', 'game'
+        self.state = 'main'  # Estados: 'main', 'config', 'character_select', 'game'
         
         # Calcular posiciones centrales para los botones
         self.button_width = 200
@@ -19,6 +20,13 @@ class Menu:
         self.create_main_menu()
         self.create_config_menu()
         self.hide_config_menu()
+        
+        # Inicializar selector de personajes
+        self.character_select = CharacterSelect(screen)
+        
+        # Equipos seleccionados
+        self.selected_allies = None
+        self.selected_enemies = None
         
         # Iniciar música del menú
         self.audio.play_bgm('menu')
@@ -123,14 +131,24 @@ class Menu:
         self.volver_button.show()
 
     def process_events(self, event):
+        if self.state == 'character_select':
+            done, allies, enemies = self.character_select.handle_event(event)
+            if done:
+                self.selected_allies = allies
+                self.selected_enemies = enemies
+                self.state = 'game'
+                self.audio.play_bgm('battle')
+                return True
+            return True
+
         if event.type == pygame.USEREVENT:
             if hasattr(event, 'user_type'):
                 if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
                     self.audio.play_sound('menu_select')
                     
                     if event.ui_element == self.iniciar_button:
-                        self.state = 'game'
-                        self.audio.play_bgm('battle')
+                        self.state = 'character_select'
+                        self.hide_main_menu()
                         return True
                     
                     elif event.ui_element == self.config_button:
@@ -154,8 +172,17 @@ class Menu:
         return True
 
     def update(self, time_delta):
-        self.manager.update(time_delta)
+        if self.state == 'character_select':
+            self.character_select.update(time_delta)
+        else:
+            self.manager.update(time_delta)
 
     def draw(self):
         self.screen.fill(DARK_GRAY)
-        self.manager.draw_ui(self.screen)
+        if self.state == 'character_select':
+            self.character_select.draw()
+        else:
+            self.manager.draw_ui(self.screen)
+
+    def get_selected_teams(self):
+        return self.selected_allies, self.selected_enemies

@@ -187,7 +187,9 @@ class Game:
                     # Dibujar
                     self.screen.fill(DARK_GRAY)
                     
-                    # Dibujar personajes
+                    # Actualizar animaciones
+                    for personaje in self.engine.personajes:
+                        personaje.actualizar_animacion()
                     for personaje in self.engine.personajes:
                         self.ui.draw_personaje(self.screen, personaje)
                     

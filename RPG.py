@@ -1,132 +1,276 @@
+import pygame
+import pygame_gui
 import random
 
-class Heroe:
-    def __init__(self, nombre, puntos_salud, nivel):
+# Inicializar Pygame
+pygame.init()
+
+# Configuración de la pantalla
+screen_width = 800
+screen_height = 600
+screen = pygame.display.set_mode((screen_width, screen_height))
+pygame.display.set_caption("RPG Turn-Based Game")
+
+# Inicializar Pygame GUI
+manager = pygame_gui.UIManager((screen_width, screen_height))
+
+# Crear los botones de acción
+atacar_boton = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((350, 450), (100, 50)),
+                                            text='Atacar',
+                                            manager=manager)
+defender_boton = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((350, 510), (100, 50)),
+                                              text='Defender',
+                                              manager=manager)
+curar_boton = pygame_gui.elements.UIButton(relative_rect=pygame.Rect((350, 570), (100, 50)),
+                                           text='Curar',
+                                           manager=manager)
+
+# Cargar sprites
+def load_sprite(name):
+    spritesheet = pygame.image.load(f'Personajes/{name}_Luchando.png')
+    frames = []
+    for i in range(4):
+        frame = pygame.Surface((64, 64), pygame.SRCALPHA)
+        frame.blit(spritesheet, (0, 0), (i * 64, 0, 64, 64))
+        frame = pygame.transform.scale(frame, (100, 100))
+        frames.append(frame)
+    return frames
+
+# Definir personajes
+class Personaje:
+    def __init__(self, nombre, vida, ataque, defensa):
         self.nombre = nombre
-        self.puntos_salud = puntos_salud
-        self.nivel = nivel
-
-    def atacar(self, objetivo):
-        pass
-
-    def recibir_daño(self, cantidad):
-        self.puntos_salud -= cantidad
-        print(f"{self.nombre} recibió {cantidad} puntos de daño. Salud restante: {self.puntos_salud}")
-        if self.puntos_salud <= 0:
-            print(f"{self.nombre} ha caído en combate.")
-
-    def recibir_sanación(self, cantidad):
-        self.puntos_salud += cantidad
-        print(f"{self.nombre} ha sido sanado por {cantidad} puntos de salud. Salud actual: {self.puntos_salud}")
-
-
-class Guerrero(Heroe):
-    def __init__(self, nombre, puntos_salud, nivel, fuerza):
-        super().__init__(nombre, puntos_salud, nivel)
-        self.fuerza = fuerza
-
-    def atacar(self, objetivo):
-        daño = random.randint(1, 20) + self.fuerza // 2
-        print(f"{self.nombre} ataca a {objetivo.nombre} causando {daño} puntos de daño.")
-        objetivo.recibir_daño(daño)
-
-
-class Mago(Heroe):
-    def __init__(self, nombre, puntos_salud, nivel, inteligencia):
-        super().__init__(nombre, puntos_salud, nivel)
-        self.inteligencia = inteligencia
-
-    def atacar(self, objetivo):
-        daño = random.randint(1, 20) + self.inteligencia
-        print(f"{self.nombre} lanza un hechizo contra {objetivo.nombre} causando {daño} puntos de daño.")
-        objetivo.recibir_daño(daño)
-
-
-class Asesino(Heroe):
-    def __init__(self, nombre, puntos_salud, nivel, destreza):
-        super().__init__(nombre, puntos_salud, nivel)
-        self.destreza = destreza
-
-    def atacar(self, objetivo):
-        daño = random.randint(1, 10) + random.randint(1, 10) + self.destreza * 2
-        print(f"{self.nombre} ataca sigilosamente a {objetivo.nombre} causando {daño} puntos de daño.")
-        objetivo.recibir_daño(daño)
-
-
-class Clerigo(Heroe):
-    def __init__(self, nombre, puntos_salud, nivel, fe):
-        super().__init__(nombre, puntos_salud, nivel)
-        self.fe = fe
-
-    def curar(self, objetivo):
-        curación = random.randint(1, 10) + self.fe
-        print(f"{self.nombre} cura a {objetivo.nombre} restaurando {curación} puntos de salud.")
-        objetivo.recibir_sanación(curación)
-
-class Paladin(Heroe):
-    def __init__(self, nombre, puntos_salud, nivel, fuerza, fe):
-        # Inicialización explícita
-        Heroe.__init__(self, nombre, puntos_salud, nivel)
-        self.fuerza = fuerza
-        self.fe = fe
-
-    def atacar(self, objetivo):
-        daño = random.randint(1, 10) + self.fuerza // 2
-        print(f"{self.nombre} ataca a {objetivo.nombre} causando {daño} puntos de daño.")
-        objetivo.recibir_daño(daño)
-
-    def curar(self, objetivo):
-        curación = random.randint(1, 5) + self.fe
-        print(f"{self.nombre} cura a {objetivo.nombre} restaurando {curación} puntos de salud.")
-        objetivo.recibir_sanación(curación)
-
-
-
-# Ejemplo de combate
-def combate():
-    guerrero = Guerrero("Thorgar", 100, 5, 18)
-    mago = Mago("Eldrin", 70, 5, 20)
-    asesino = Asesino("Shadow", 80, 5, 15)
-    clerigo = Clerigo("Liora", 60, 5, 25)
-    paladin = Paladin("Arthas", 90, 5, 16, 20)
-
-    equipo = [guerrero, clerigo, paladin]
-    enemigos = [asesino, mago, guerrero]
-    #enemigos = [Guerrero("Orco", 120, 4, 14), Mago("Nigromante", 60, 4, 18)]
-
-    turno = 0
-    while any(e.puntos_salud > 0 for e in equipo) and any(e.puntos_salud > 0 for e in enemigos):
-        print(f"\n--- Turno {turno + 1} ---")
-        atacante = random.choice(equipo if turno % 2 == 0 else enemigos)
-        defensor = random.choice(enemigos if turno % 2 == 0 else equipo)
-
-        if isinstance(atacante, Clerigo):
-            aliado = random.choice(equipo if atacante in equipo else enemigos)
-            atacante.curar(aliado)
+        self.vida = vida
+        self.ataque = ataque
+        self.defensa = defensa
+        self.frames = load_sprite(nombre)
+        self.frame_actual = 0
+        self.ultimo_update = pygame.time.get_ticks()
+        self.delay_animacion = 100
+        self.animando = False
+        self.rect = self.frames[0].get_rect()
+        self.destacado = False
+        self.tiempo_destacado = 0
+        
+    def actualizar_animacion(self):
+        ahora = pygame.time.get_ticks()
+        if self.animando:
+            if ahora - self.ultimo_update > self.delay_animacion:
+                self.ultimo_update = ahora
+                self.frame_actual = (self.frame_actual + 1) % len(self.frames)
+                if self.frame_actual == 0:
+                    self.animando = False
         else:
-            atacante.atacar(defensor)
+            self.frame_actual = 0
+            
+    def get_sprite(self):
+        return self.frames[self.frame_actual]
 
-        equipo = [h for h in equipo if h.puntos_salud > 0]
-        enemigos = [h for h in enemigos if h.puntos_salud > 0]
+    def atacar(self, enemigo):
+        self.destacado = True
+        self.tiempo_destacado = pygame.time.get_ticks()
+        self.animando = True
+        self.ultimo_update = pygame.time.get_ticks()
+        daño = self.ataque - enemigo.defensa
+        if daño > 0:
+            enemigo.vida -= daño
+            enemigo.destacado = True
+            enemigo.tiempo_destacado = pygame.time.get_ticks()
+        return daño
+    
+    def defender(self):
+        self.destacado = True
+        self.tiempo_destacado = pygame.time.get_ticks()
+        self.defensa *= 2
+        
+    def curar(self, aliado):
+        self.destacado = True
+        self.tiempo_destacado = pygame.time.get_ticks()
+        aliado.vida += 30
+        if aliado.vida > 100:
+            aliado.vida = 100
 
-        print_estado(equipo, enemigos)
-        turno += 1
+    def actualizar_destacado(self):
+        if self.destacado and pygame.time.get_ticks() - self.tiempo_destacado > 200:
+            self.destacado = False
 
-    if any(h.puntos_salud > 0 for h in equipo):
-        print("\n¡El equipo de héroes ha ganado!")
-    else:
-        print("\n¡Los enemigos han ganado!")
+# Crear personajes
+guerrero = Personaje("Thorgar", 100, 20, 5)
+mago = Personaje("Eldrin", 80, 15, 10)
+sanadora = Personaje("Liora", 120, 10, 15)
 
+# Crear enemigos
+caballero = Personaje("Arthas", 90, 25, 8)
+asesino = Personaje("Shadow", 70, 30, 3)
 
-def print_estado(equipo, enemigos):
-    print("\nEstado del Equipo:")
-    for h in equipo:
-        print(f"{h.nombre}: {h.puntos_salud} puntos de salud")
+# Equipos
+equipo = [guerrero, mago, sanadora]
+enemigos = [caballero, asesino]
 
-    print("\nEstado de los Enemigos:")
-    for e in enemigos:
-        print(f"{e.nombre}: {e.puntos_salud} puntos de salud")
+# Variables globales para el estado del juego
+mensaje_estado = ""
+mensaje_combate = ""
+combate_terminado = False
+turno_personaje = 0
+esperando_accion = True
+
+def reiniciar_juego():
+    global equipo, enemigos, mensaje_estado, mensaje_combate, combate_terminado, turno_personaje, esperando_accion
+    equipo.clear()
+    enemigos.clear()
+    equipo.extend([Personaje("Thorgar", 100, 20, 5), Personaje("Eldrin", 80, 15, 10), Personaje("Liora", 120, 10, 15)])
+    enemigos.extend([Personaje("Arthas", 90, 25, 8), Personaje("Shadow", 70, 30, 3)])
+    posicionar_personajes()
+    mensaje_estado = "Presiona ESPACIO para combatir"
+    mensaje_combate = ""
+    combate_terminado = False
+    turno_personaje = 0
+    esperando_accion = True
+
+def parpadeo_rapido():
+    original_color = screen.get_at((0, 0))
+    screen.fill((100, 100, 100))
+    pygame.display.flip()
+    pygame.time.wait(50)
+    screen.fill(original_color)
+    pygame.display.flip()
+
+def combate():
+    global mensaje_estado, mensaje_combate, combate_terminado, esperando_accion, turno_personaje
+    if combate_terminado:
+        reiniciar_juego()
+        return
+    mensaje_combate = ""
+    mensajes_turno = []
+    parpadeo_rapido()
+    for personaje in equipo:
+        if personaje.vida > 0 and enemigos:
+            enemigo = random.choice(enemigos)
+            daño = personaje.atacar(enemigo)
+            mensajes_turno.append(f"{personaje.nombre} ataca a {enemigo.nombre} y causa {daño} de daño")
+            if enemigo.vida <= 0:
+                mensajes_turno.append(f"{enemigo.nombre} ha sido derrotado!")
+                enemigos.remove(enemigo)
+    if not enemigos:
+        mensaje_estado = "¡Has ganado! Presiona ESPACIO para jugar de nuevo"
+        mensaje_combate = "\n".join(mensajes_turno)
+        combate_terminado = True
+        return
+    for enemigo in enemigos:
+        if enemigo.vida > 0 and equipo:
+            personaje = random.choice(equipo)
+            daño = enemigo.atacar(personaje)
+            mensajes_turno.append(f"{enemigo.nombre} ataca a {personaje.nombre} y causa {daño} de daño")
+            if personaje.vida <= 0:
+                mensajes_turno.append(f"{personaje.nombre} ha sido derrotado!")
+                equipo.remove(personaje)
+    mensaje_combate = "\n".join(mensajes_turno)
+    if not equipo:
+        mensaje_estado = "¡Has perdido! Presiona ESPACIO para intentarlo de nuevo"
+        combate_terminado = True
+        return
+
+def manejar_turno_personaje(accion):
+    global esperando_accion, turno_personaje, mensaje_combate
+    personaje = equipo[turno_personaje]
+    if accion == 'atacar':
+        enemigo = enemigos[0] if enemigos else None
+        if enemigo:
+            daño = personaje.atacar(enemigo)
+            mensaje_combate = f"{personaje.nombre} ataca a {enemigo.nombre} y causa {daño} de daño"
+            if enemigo.vida <= 0:
+                mensaje_combate += f"\n{enemigo.nombre} ha sido derrotado!"
+                enemigos.remove(enemigo)
+    elif accion == 'defender':
+        personaje.defender()
+        mensaje_combate = f"{personaje.nombre} se defiende aumentando su defensa temporalmente"
+    elif accion == 'curar':
+        aliado = equipo[0] if equipo else None
+        if aliado:
+            personaje.curar(aliado)
+            mensaje_combate = f"{personaje.nombre} cura a {aliado.nombre}, restaurando 30 puntos de vida"
+    esperando_accion = False
+
+def posicionar_personajes():
+    for i, personaje in enumerate(equipo):
+        personaje.rect.x = 50
+        personaje.rect.y = 100 + (i * 150)
+    for i, enemigo in enumerate(enemigos):
+        enemigo.rect.x = screen_width - 150
+        enemigo.rect.y = 100 + (i * 150)
+
+def main():
+    global mensaje_estado, turno_personaje, esperando_accion, mensaje_combate
+    running = True
+    posicionar_personajes()
+    mensaje_estado = "Presiona ESPACIO para combatir"
+    mensaje_combate = ""
+    font = pygame.font.Font(None, 36)
+    clock = pygame.time.Clock()
+    
+    while running:
+        time_delta = clock.tick(60)/1000.0
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.USEREVENT:
+                if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
+                    if event.ui_element == atacar_boton:
+                        manejar_turno_personaje('atacar')
+                    elif event.ui_element == defender_boton:
+                        manejar_turno_personaje('defender')
+                    elif event.ui_element == curar_boton:
+                        manejar_turno_personaje('curar')
+            
+            manager.process_events(event)
+
+        manager.update(time_delta)
+
+        screen.fill((50, 50, 50))  # Fondo gris oscuro
+        
+        # Dibujar personajes
+        for personaje in equipo + enemigos:
+            # Actualizar efecto destacado
+            personaje.actualizar_destacado()
+            
+            # Dibujar sprite con efecto si está destacado
+            if personaje.destacado:
+                # Crear un borde brillante temporal
+                s = pygame.Surface((104, 104))
+                s.fill((255, 255, 0))  # Color amarillo para el borde
+                screen.blit(s, (personaje.rect.x - 2, personaje.rect.y - 2))
+            
+            # Actualizar y dibujar la animación del personaje
+            personaje.actualizar_animacion()
+            screen.blit(personaje.get_sprite(), personaje.rect)
+            
+            # Dibujar barra de vida
+            if personaje.vida >= 70:
+                color = (0, 255, 0)  # Verde para vida alta
+            elif personaje.vida >= 30:
+                color = (255, 255, 0)  # Amarillo para vida media
+            else:
+                color = (255, 0, 0)  # Rojo para vida baja
+            vida_text = font.render(f"HP: {personaje.vida}", True, color)
+            screen.blit(vida_text, (personaje.rect.x, personaje.rect.y - 20))
+            
+        # Dibujar mensaje de estado
+        instruccion = font.render(mensaje_estado, True, (255, 255, 255))
+        screen.blit(instruccion, (screen_width//2 - instruccion.get_width()//2, 20))
+        
+        # Dibujar mensajes de combate
+        if mensaje_combate:
+            lineas = mensaje_combate.split('\n')
+            for i, linea in enumerate(lineas):
+                texto = font.render(linea, True, (255, 200, 0))  # Color amarillo para mensajes de combate
+                screen.blit(texto, (screen_width//2 - texto.get_width()//2, 500 + i * 25))
+
+        # Dibujar GUI
+        manager.draw_ui(screen)
+        
+        pygame.display.flip()  # Actualizar pantalla
+
+    pygame.quit()
 
 if __name__ == "__main__":
-    combate()
-
+    main()

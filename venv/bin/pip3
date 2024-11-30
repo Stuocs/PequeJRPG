@@ -1,4 +1,4 @@
-#!/home/alfredo/Documentos/Cyber/Cyber/PPS/Pequeño_Juego_Rol/venv/bin/python3
+#!/home/alfredo/Documentos/Cyber/Cyber/PPS/git/master/PequeJRPG/venv/bin/python3.12
 # -*- coding: utf-8 -*-
 import re
 import sys
